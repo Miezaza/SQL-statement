@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>SQL Input Form</title>
+<style>
+  body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+         background: linear-gradient(135deg, #e2f3f7, #b0e0e6); min-height:100vh;
+         display:flex; align-items:center; justify-content:center; margin:0; }
+  .form-container { width:520px; background:rgba(255,255,255,.2); backdrop-filter:blur(15px);
+         border-radius:20px; padding:28px; box-shadow:0 8px 32px rgba(0,0,0,.2); color:#222; }
+  label { display:block; margin-top:12px; font-weight:600; }
+  input, select, textarea { width:100%; margin-top:6px; padding:10px; border:none; border-radius:12px;
+         background:rgba(255,255,255,.9); font-size:14px; }
+  button { width:100%; margin-top:18px; padding:12px; border:none; border-radius:22px; cursor:pointer;
+         color:#fff; font-weight:700; background:linear-gradient(90deg,#ff758c,#ff7eb3); }
+</style>
+</head>
+<body>
+<div class="form-container">
+  <h2>Submit SQL Statement</h2>
+  <form id="sqlForm">
+    <label>Project ID <input id="project_id" required placeholder="e.g. PRJ001" /></label>
+    <label>Environment
+      <select id="env" required>
+        <option value="">-- Select Env --</option>
+        <option>DEV</option><option>SIT</option><option>UAT</option><option>PRD</option>
+      </select>
+    </label>
+    <label>Task <input id="task" placeholder="e.g. Index Review" /></label>
+    <label>Change No. <input id="change_no" placeholder="e.g. CHG123456" /></label>
+    <label>Remark <textarea id="remark" rows="3" placeholder="Add remarks..."></textarea></label>
+    <label>Status
+      <select id="status" required>
+        <option value="">-- Select Status --</option>
+        <option>Pending</option><option>Approved</option>
+        <option>Rejected</option><option>Implemented</option>
+      </select>
+    </label>
+    <label>Instance Name <input id="instance_name" placeholder="e.g. db-prd-01" /></label>
+    <label>SQL Statement <textarea id="raw_sql" rows="6" required placeholder="Write your SQL here..."></textarea></label>
+    <button type="submit">🚀 Submit</button>
+  </form>
+  <p id="msg" style="font:13px/1.6 system-ui;margin-top:10px;"></p>
+</div>
+
+<script>
+const WEBHOOK_URL = 'http://localhost:3000/sql-review'; // POC URL
+
+document.getElementById('sqlForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const msg = document.getElementById('msg');
+
+  const data = {
+    project_id   : document.getElementById('project_id').value.trim(),
+    env          : document.getElementById('env').value,
+    task         : document.getElementById('task').value.trim(),
+    change_no    : document.getElementById('change_no').value.trim(),
+    remark       : document.getElementById('remark').value.trim(),
+    status       : document.getElementById('status').value,
+    instance_name: document.getElementById('instance_name').value.trim(),
+    raw_sql      : document.getElementById('raw_sql').value
+  };
+
+  try {
+    const res = await fetch(WEBHOOK_URL, {
+      method : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body   : JSON.stringify(data),
+      mode   : 'cors',
+      cache  : 'no-store',
+    });
+
+    const text = await res.text();   // รองรับกรณี n8n ตอบเป็น text/json
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${text}`);
+
+    msg.textContent = `✅ Sent OK: ${text}`;
+    msg.style.color = '#136f27';
+    e.target.reset();
+  } catch (err) {
+    console.error(err);
+    msg.textContent = `❌ ${err.message}`;
+    msg.style.color = '#b00020';
+  }
+});
+</script>
+</body>
+</html>
